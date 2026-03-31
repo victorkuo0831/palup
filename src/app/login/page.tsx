@@ -51,9 +51,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center">
           <div className="inline-flex items-center gap-3 mb-6">
-            <div className="relative h-10 w-10 rounded-[12px] bg-gradient-to-br from-indigo-500 to-indigo-600 shadow-lg shadow-indigo-500/20">
-              <div className="absolute inset-0 rounded-[12px] bg-gradient-to-br from-white/20 to-transparent" />
-            </div>
+            <img src="/logo.svg" alt="PalUp" width={40} height={40} />
             <span className="text-[22px] font-semibold tracking-tight text-white">PalUp</span>
           </div>
           <h1 className="text-[20px] font-semibold text-zinc-200">

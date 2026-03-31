@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import { Logo } from "@/components/logo";
 
 const NAV_LINKS = [
   { href: "/app", label: "Home" },
@@ -70,9 +71,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="mx-auto flex h-14 max-w-[1000px] items-center justify-between px-6">
           {/* Left */}
           <div className="flex items-center gap-3">
-            <div className="relative h-7 w-7 rounded-[8px] bg-gradient-to-br from-indigo-500 to-indigo-600 shadow-lg shadow-indigo-500/20">
-              <div className="absolute inset-0 rounded-[8px] bg-gradient-to-br from-white/20 to-transparent" />
-            </div>
+            <Logo size={28} />
             <span className="text-[14px] font-semibold tracking-tight text-white">PalUp</span>
             <span className="hidden sm:inline text-[12px] text-zinc-500 pl-1">Your AI Sales Team</span>
           </div>

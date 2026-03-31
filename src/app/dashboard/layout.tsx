@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Logo } from "@/components/logo";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Overview", icon: "M2.25 12l8.954-8.955a1.126 1.126 0 011.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" },
@@ -24,9 +25,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <aside className="glass fixed left-0 top-0 z-30 flex h-screen w-[232px] flex-col border-r border-white/[0.06]">
         {/* Logo */}
         <div className="flex items-center gap-3 px-5 pt-6 pb-8">
-          <div className="relative h-8 w-8 rounded-[10px] bg-gradient-to-br from-indigo-500 to-indigo-600 shadow-lg shadow-indigo-500/20">
-            <div className="absolute inset-0 rounded-[10px] bg-gradient-to-br from-white/20 to-transparent" />
-          </div>
+          <Logo size={32} />
           <span className="text-[15px] font-semibold tracking-tight text-white">PalUp</span>
           <span className="ml-auto badge bg-indigo-500/10 text-indigo-400 text-[10px]">Beta</span>
         </div>

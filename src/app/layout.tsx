@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PalUp - Turn Ideas Into Revenue",
-  description:
-    "Describe your business goal in one sentence. PalUp autonomously builds, deploys, and optimizes everything to generate revenue.",
+  title: "PalUp - Your AI Sales Team",
+  description: "AI-powered sales agents that prospect, sell, and close deals for your business. Auto-evolving, auto-debugging, auto-deploying.",
+  icons: { icon: "/logo.svg" },
 };
 
 export default function RootLayout({
