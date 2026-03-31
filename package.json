@@ -9,18 +9,43 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.80.0",
+    "@clerk/nextjs": "^7.0.7",
+    "@neondatabase/serverless": "^1.0.2",
+    "@tanstack/react-query": "^5.95.2",
+    "@trpc/client": "^11.15.1",
+    "@trpc/next": "^11.15.1",
+    "@trpc/react-query": "^11.15.1",
+    "@trpc/server": "^11.15.1",
+    "bullmq": "^5.71.1",
+    "cohere-ai": "^7.20.0",
+    "dotenv": "^17.3.1",
+    "drizzle-orm": "^0.45.1",
+    "ioredis": "^5.10.1",
+    "nanoid": "^5.1.7",
     "next": "16.2.1",
+    "openai": "^6.33.0",
+    "pg": "^8.20.0",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "resend": "^6.9.4",
+    "stripe": "^21.0.1",
+    "superjson": "^2.2.6",
+    "uuid": "^13.0.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/pg": "^8.20.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/uuid": "^10.0.0",
+    "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }
