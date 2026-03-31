@@ -587,6 +587,37 @@ export const knowledgeEntries = pgTable(
   ]
 );
 
+// ─── Auth Sessions ───────────────────────────────────────────
+
+export const authAccounts = pgTable(
+  "auth_accounts",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    email: text("email").notNull(),
+    name: text("name"),
+    companyName: text("company_name"),
+    passwordHash: text("password_hash").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("auth_accounts_email_idx").on(table.email),
+  ]
+);
+
+export const authSessions = pgTable(
+  "auth_sessions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    accountId: uuid("account_id").notNull().references(() => authAccounts.id, { onDelete: "cascade" }),
+    token: text("token").notNull().unique(),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("auth_sessions_token_idx").on(table.token),
+  ]
+);
+
 // ─── LLM Cost Matrix (Cost Down) ─────────────────────────────
 
 export const llmCostMatrix = pgTable("llm_cost_matrix", {

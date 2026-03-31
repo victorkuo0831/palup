@@ -21,7 +21,7 @@ export default function LandingPage() {
               Pricing
             </a>
             <Link
-              href="/dashboard"
+              href="/login"
               className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium hover:bg-violet-500"
             >
               Get Started

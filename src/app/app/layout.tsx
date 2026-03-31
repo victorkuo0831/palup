@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 
 const NAV_LINKS = [
   { href: "/app", label: "Home" },
@@ -10,15 +11,64 @@ const NAV_LINKS = [
   { href: "/app/settings", label: "Settings" },
 ];
 
+interface User {
+  id: string;
+  email: string;
+  name: string | null;
+  companyName: string | null;
+}
+
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+  const [checking, setChecking] = useState(true);
+  const [showMenu, setShowMenu] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data.user) {
+          router.replace("/login");
+        } else {
+          setUser(data.user);
+        }
+      })
+      .catch(() => router.replace("/login"))
+      .finally(() => setChecking(false));
+  }, [router]);
+
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.replace("/login");
+  };
+
+  if (checking) {
+    return (
+      <div className="min-h-screen bg-[#09090b] flex items-center justify-center">
+        <div className="flex items-center gap-3">
+          <div className="h-5 w-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+          <span className="text-[14px] text-zinc-500">Loading...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) return null;
+
+  const initials = user.name
+    ? user.name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2)
+    : user.email.slice(0, 2).toUpperCase();
+
+  const displayCompany = user.companyName || "My Company";
 
   return (
     <div className="min-h-screen bg-[#09090b]">
-      {/* ─── Top Navigation Bar ─────────────────────────── */}
+      {/* Top Navigation */}
       <header className="glass fixed top-0 left-0 right-0 z-30 border-b border-white/[0.06]">
         <div className="mx-auto flex h-14 max-w-[1000px] items-center justify-between px-6">
-          {/* Left: Logo + tagline */}
+          {/* Left */}
           <div className="flex items-center gap-3">
             <div className="relative h-7 w-7 rounded-[8px] bg-gradient-to-br from-indigo-500 to-indigo-600 shadow-lg shadow-indigo-500/20">
               <div className="absolute inset-0 rounded-[8px] bg-gradient-to-br from-white/20 to-transparent" />
@@ -27,40 +77,55 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <span className="hidden sm:inline text-[12px] text-zinc-500 pl-1">Your AI Sales Team</span>
           </div>
 
-          {/* Center: Nav links */}
+          {/* Center */}
           <nav className="flex items-center gap-1">
             {NAV_LINKS.map((link) => {
-              const isActive =
-                link.href === "/app"
-                  ? pathname === "/app"
-                  : pathname.startsWith(link.href);
+              const isActive = link.href === "/app" ? pathname === "/app" : pathname.startsWith(link.href);
               return (
-                <Link
-                  key={link.href}
-                  href={link.href}
+                <Link key={link.href} href={link.href}
                   className={`rounded-lg px-3.5 py-1.5 text-[13px] font-medium transition-all duration-150 ${
-                    isActive
-                      ? "bg-white/[0.08] text-white"
-                      : "text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200"
-                  }`}
-                >
+                    isActive ? "bg-white/[0.08] text-white" : "text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200"
+                  }`}>
                   {link.label}
                 </Link>
               );
             })}
           </nav>
 
-          {/* Right: Company badge + avatar */}
-          <div className="flex items-center gap-3">
-            <span className="badge bg-white/[0.06] text-zinc-300 text-[11px]">CloudSync</span>
-            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-[11px] font-semibold text-white shadow-lg shadow-emerald-500/10 cursor-pointer">
-              CS
-            </div>
+          {/* Right */}
+          <div className="relative flex items-center gap-3">
+            <span className="badge bg-white/[0.06] text-zinc-300 text-[11px]">{displayCompany}</span>
+            <button
+              onClick={() => setShowMenu(!showMenu)}
+              className="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center text-[11px] font-semibold text-white shadow-lg shadow-indigo-500/10 hover:opacity-90 transition-opacity"
+            >
+              {initials}
+            </button>
+
+            {/* Dropdown */}
+            {showMenu && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
+                <div className="absolute right-0 top-10 z-50 w-56 rounded-xl bg-zinc-900 border border-white/[0.08] shadow-2xl p-2">
+                  <div className="px-3 py-2 mb-1">
+                    <p className="text-[13px] font-medium text-zinc-200">{user.name || "User"}</p>
+                    <p className="text-[11px] text-zinc-500">{user.email}</p>
+                  </div>
+                  <div className="h-px bg-white/[0.06] my-1" />
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left rounded-lg px-3 py-2 text-[13px] text-rose-400 hover:bg-rose-500/10 transition-colors"
+                  >
+                    Sign out
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </header>
 
-      {/* ─── Main Content ───────────────────────────────── */}
+      {/* Main Content */}
       <main className="pt-14">
         <div className="mx-auto max-w-[1000px] px-6 py-8">
           {children}
