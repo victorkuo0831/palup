@@ -1,286 +1,328 @@
 "use client";
 
-import Link from "next/link";
+import { useState, useRef, useEffect } from "react";
 
-// ─── Activity Feed Data ─────────────────────────────────────────
+interface Prospect {
+  company: string;
+  website: string;
+  industry: string;
+  size: string;
+  contactName: string;
+  contactTitle: string;
+  contactEmail: string;
+  whyGoodFit: string;
+  outreachMessage: string;
+}
 
-const RECENT_ACTIVITIES = [
-  {
-    icon: "M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75",
-    text: "Sent personalized outreach to Maya Chen at TechVista",
-    time: "2h ago",
-    color: "text-indigo-400",
-  },
-  {
-    icon: "M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5",
-    text: "Scheduled demo with DataPulse Analytics for Apr 1",
-    time: "4h ago",
-    color: "text-emerald-400",
-  },
-  {
-    icon: "M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3",
-    text: "Followed up on proposal sent to GreenLeaf Commerce",
-    time: "5h ago",
-    color: "text-amber-400",
-  },
-  {
-    icon: "M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z",
-    text: "Researched 12 new prospects matching your ideal customer profile",
-    time: "6h ago",
-    color: "text-violet-400",
-  },
-  {
-    icon: "M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z",
-    text: "Updated competitor info: SalesBot AI launched new feature",
-    time: "yesterday",
-    color: "text-rose-400",
-  },
-];
+interface ICP {
+  product: string;
+  targetCustomer: string;
+  icp: {
+    industries?: string[];
+    roles?: string[];
+    companySize?: string;
+    geography?: string;
+  };
+  searchStrategy: string;
+}
 
-// ─── Pipeline Stages ────────────────────────────────────────────
+interface Result {
+  interpretation: ICP;
+  prospects: Prospect[];
+}
 
-const PIPELINE_STAGES = [
-  { label: "Lead", count: 2, color: "bg-zinc-500" },
-  { label: "Qualified", count: 2, color: "bg-blue-500" },
-  { label: "Demo", count: 2, color: "bg-indigo-500" },
-  { label: "Proposal", count: 2, color: "bg-violet-500" },
-  { label: "Negotiation", count: 2, color: "bg-amber-500" },
-  { label: "Won", count: 1, color: "bg-emerald-500" },
-];
+export default function AppHome() {
+  const [goal, setGoal] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [phase, setPhase] = useState<"idle" | "interpreting" | "prospecting" | "done">("idle");
+  const [result, setResult] = useState<Result | null>(null);
+  const [error, setError] = useState("");
+  const [expandedProspect, setExpandedProspect] = useState<number | null>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
 
-// ─── Action Items ───────────────────────────────────────────────
+  useEffect(() => {
+    if (result && resultRef.current) {
+      resultRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [result]);
 
-const ACTION_ITEMS = [
-  {
-    title: "Approve discount",
-    description:
-      "TechFlow wants 10% off the Enterprise plan. Your limit is 15%.",
-    question: "Approve?",
-    actions: [
-      { label: "Approve", style: "primary" },
-      { label: "Decline", style: "secondary" },
-    ],
-    accent: "glow-indigo",
-  },
-  {
-    title: "Review proposal",
-    description:
-      "Draft proposal ready for DataPulse ($72K). Review before we send?",
-    question: "",
-    actions: [
-      { label: "View", style: "secondary" },
-      { label: "Send", style: "primary" },
-    ],
-    accent: "glow-emerald",
-  },
-  {
-    title: "New competitor mention",
-    description:
-      "A prospect mentioned RevenueOS. Update your battlecard?",
-    question: "",
-    actions: [{ label: "Update", style: "primary" }],
-    accent: "glow-amber",
-  },
-];
+  const handleSubmit = async () => {
+    if (!goal.trim() || loading) return;
+    setLoading(true);
+    setError("");
+    setResult(null);
+    setExpandedProspect(null);
+    setPhase("interpreting");
 
-// ─── Monthly Metrics ────────────────────────────────────────────
+    try {
+      const res = await fetch("/api/agent/execute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ goal: goal.trim() }),
+      });
 
-const MONTHLY_METRICS = [
-  { label: "Emails Sent", value: "342", icon: "M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" },
-  { label: "Meetings Booked", value: "8", icon: "M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" },
-  { label: "Proposals Sent", value: "4", icon: "M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" },
-  { label: "Revenue Won", value: "$36,000", icon: "M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" },
-];
+      const data = await res.json();
 
-export default function AppHomePage() {
-  const totalPipelineValue = "$445,000";
+      if (!res.ok) {
+        setError(data.error || "Something went wrong");
+        setPhase("idle");
+        return;
+      }
+
+      setPhase("prospecting");
+      await new Promise(r => setTimeout(r, 800));
+      setResult(data);
+      setPhase("done");
+    } catch {
+      setError("Connection failed. Please try again.");
+      setPhase("idle");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="space-y-10">
-      {/* ─── Status Banner ─────────────────────────────── */}
-      <div className="card-elevated glow-emerald px-6 py-5">
-        <div className="flex items-center gap-3">
-          <span className="relative flex h-3 w-3">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-500" />
-          </span>
-          <h1 className="text-[22px] font-semibold text-white">
-            Your AI sales team is active
-          </h1>
-        </div>
-        <p className="mt-2 text-[13px] text-zinc-400 pl-6">
-          5 agents working &middot; 3 active deals &middot; 2 actions today
+    <div className="space-y-8">
+      {/* Hero input */}
+      <div className="card-elevated p-8 text-center">
+        <h1 className="text-[24px] font-semibold tracking-tight text-zinc-100">
+          What do you want to sell?
+        </h1>
+        <p className="text-[14px] text-zinc-500 mt-2 max-w-lg mx-auto">
+          Describe your business in plain language. Your AI sales team will find real prospects and draft personalized outreach.
         </p>
+
+        <div className="mt-6 max-w-2xl mx-auto">
+          <div className="flex gap-3">
+            <input
+              type="text"
+              value={goal}
+              onChange={(e) => setGoal(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+              placeholder='e.g. "I sell mountain bikes, find me customers"'
+              disabled={loading}
+              className="flex-1 rounded-xl border border-white/[0.08] bg-white/[0.04] px-5 py-3.5 text-[15px] text-zinc-200 placeholder-zinc-600 focus:border-indigo-500/50 focus:outline-none transition-colors disabled:opacity-50"
+            />
+            <button
+              onClick={handleSubmit}
+              disabled={loading || !goal.trim()}
+              className="shrink-0 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[14px] font-semibold px-6 py-3.5 transition-all shadow-lg shadow-indigo-500/20"
+            >
+              {loading ? "Working..." : "Find Customers"}
+            </button>
+          </div>
+
+          {phase === "idle" && !result && (
+            <div className="flex flex-wrap justify-center gap-2 mt-4">
+              {[
+                "I sell organic skincare products to spas and hotels",
+                "I run a SaaS for restaurant inventory management",
+                "I offer corporate team building workshops",
+                "I sell solar panels to commercial building owners",
+              ].map((ex) => (
+                <button
+                  key={ex}
+                  onClick={() => setGoal(ex)}
+                  className="rounded-lg bg-white/[0.03] border border-white/[0.06] px-3 py-1.5 text-[12px] text-zinc-500 hover:text-zinc-300 hover:border-white/[0.1] transition-all"
+                >
+                  {ex}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {error && (
+          <div className="mt-4 mx-auto max-w-lg rounded-xl bg-rose-500/[0.08] border border-rose-500/20 px-4 py-3">
+            <p className="text-[13px] text-rose-400">{error}</p>
+          </div>
+        )}
       </div>
 
-      {/* ─── Section 1: Activity Feed ──────────────────── */}
-      <section>
-        <h2 className="text-[22px] font-semibold text-white mb-4">
-          What your agents did today
-        </h2>
-        <div className="space-y-1">
-          {RECENT_ACTIVITIES.map((activity, i) => (
-            <div
-              key={i}
-              className="card card-hover flex items-start gap-3.5 px-5 py-3.5 rounded-xl"
-            >
-              <svg
-                className={`mt-0.5 h-[18px] w-[18px] shrink-0 ${activity.color}`}
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.5}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d={activity.icon}
-                />
-              </svg>
-              <p className="flex-1 text-[13px] text-zinc-200 leading-relaxed">
-                {activity.text}
-              </p>
-              <span className="shrink-0 text-[12px] text-zinc-500">
-                {activity.time}
-              </span>
+      {/* Loading */}
+      {loading && (
+        <div className="card p-6">
+          <div className="flex items-center gap-4">
+            <div className="h-10 w-10 rounded-xl bg-indigo-500/10 flex items-center justify-center">
+              <div className="h-5 w-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
             </div>
-          ))}
+            <div>
+              <p className="text-[14px] font-medium text-zinc-200">
+                {phase === "interpreting" && "Understanding your business..."}
+                {phase === "prospecting" && "Finding real prospects for you..."}
+              </p>
+              <p className="text-[12px] text-zinc-500 mt-0.5">
+                {phase === "interpreting" && "Analyzing your product, target market, and ideal customer profile"}
+                {phase === "prospecting" && "Searching for companies that match your ideal customer profile"}
+              </p>
+            </div>
+          </div>
+          <div className="mt-5 space-y-3">
+            <StepIndicator label="Interpret your goal" done={phase !== "interpreting"} active={phase === "interpreting"} />
+            <StepIndicator label="Define ideal customer profile" done={phase === "prospecting" || phase === "done"} active={false} />
+            <StepIndicator label="Find matching companies" done={phase === "done"} active={phase === "prospecting"} />
+            <StepIndicator label="Draft personalized outreach" done={phase === "done"} active={false} />
+          </div>
         </div>
-      </section>
+      )}
 
-      {/* ─── Section 2: Pipeline Overview ──────────────── */}
-      <section>
-        <h2 className="text-[22px] font-semibold text-white mb-4">
-          Your pipeline
-        </h2>
-        <div className="card-elevated px-6 py-5">
-          {/* Progress bar */}
-          <div className="flex gap-1 mb-4 h-3 rounded-full overflow-hidden">
-            {PIPELINE_STAGES.map((stage) => (
-              <div
-                key={stage.label}
-                className={`${stage.color} opacity-80`}
-                style={{
-                  flex: stage.count,
-                }}
-              />
-            ))}
-          </div>
-
-          {/* Stage labels */}
-          <div className="flex justify-between gap-2 mb-5">
-            {PIPELINE_STAGES.map((stage, i) => (
-              <div key={stage.label} className="flex items-center gap-1.5">
-                <div className={`h-2 w-2 rounded-full ${stage.color}`} />
-                <span className="text-[12px] text-zinc-400">
-                  {stage.label}
-                </span>
-                <span className="text-[11px] text-zinc-500">
-                  ({stage.count})
-                </span>
-                {i < PIPELINE_STAGES.length - 1 && (
-                  <svg
-                    className="ml-1 h-3 w-3 text-zinc-600"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M8.25 4.5l7.5 7.5-7.5 7.5"
-                    />
-                  </svg>
-                )}
+      {/* Results */}
+      {result && (
+        <div ref={resultRef} className="space-y-6">
+          {/* ICP */}
+          <div className="card p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                <svg className="h-4 w-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
               </div>
-            ))}
+              <div>
+                <h2 className="text-[15px] font-semibold text-zinc-200">Your AI Sales Agent understood your goal</h2>
+                <p className="text-[12px] text-zinc-500">Here&apos;s the plan</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <InfoBlock label="What you sell" value={result.interpretation.product} />
+              <InfoBlock label="Target customer" value={result.interpretation.targetCustomer} />
+              <InfoBlock label="Industries" value={result.interpretation.icp?.industries?.join(", ") || "Various"} />
+              <InfoBlock label="Strategy" value={result.interpretation.searchStrategy} />
+            </div>
           </div>
 
+          {/* Prospects */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-[16px] font-semibold text-zinc-200">
+                Found {result.prospects.length} prospects for you
+              </h2>
+              <span className="badge bg-emerald-500/10 text-emerald-400 text-[11px]">Outreach ready</span>
+            </div>
+            <div className="space-y-3">
+              {result.prospects.map((p, i) => (
+                <ProspectCard
+                  key={i}
+                  prospect={p}
+                  expanded={expandedProspect === i}
+                  onToggle={() => setExpandedProspect(expandedProspect === i ? null : i)}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Next steps */}
+          <div className="card p-6 border-indigo-500/20">
+            <h3 className="text-[14px] font-semibold text-zinc-200 mb-3">What happens next</h3>
+            <div className="space-y-2.5 text-[13px] text-zinc-400">
+              <div className="flex gap-3">
+                <span className="h-5 w-5 rounded-full bg-indigo-500/20 flex items-center justify-center text-[11px] font-bold text-indigo-400 shrink-0">1</span>
+                <span>Review the prospects above and click &quot;Send&quot; to approve outreach</span>
+              </div>
+              <div className="flex gap-3">
+                <span className="h-5 w-5 rounded-full bg-indigo-500/20 flex items-center justify-center text-[11px] font-bold text-indigo-400 shrink-0">2</span>
+                <span>Your AI agent will send personalized emails and track responses</span>
+              </div>
+              <div className="flex gap-3">
+                <span className="h-5 w-5 rounded-full bg-indigo-500/20 flex items-center justify-center text-[11px] font-bold text-indigo-400 shrink-0">3</span>
+                <span>When someone replies, your agent handles the conversation and books meetings</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center">
+            <button
+              onClick={() => { setResult(null); setPhase("idle"); setGoal(""); }}
+              className="text-[13px] text-indigo-400 hover:text-indigo-300 transition-colors"
+            >
+              Try a different goal
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StepIndicator({ label, done, active }: { label: string; done: boolean; active: boolean }) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className={`h-6 w-6 rounded-full flex items-center justify-center transition-all duration-500 ${
+        done ? "bg-emerald-500" : active ? "bg-indigo-500 animate-pulse-soft" : "bg-zinc-800 border border-zinc-700"
+      }`}>
+        {done && <svg className="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+      </div>
+      <span className={`text-[13px] ${done ? "text-emerald-400" : active ? "text-indigo-400 font-medium" : "text-zinc-600"}`}>{label}</span>
+    </div>
+  );
+}
+
+function InfoBlock({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl bg-white/[0.02] border border-white/[0.04] p-3.5">
+      <p className="text-[11px] uppercase tracking-wider text-zinc-500 font-medium mb-1">{label}</p>
+      <p className="text-[13px] text-zinc-300 leading-relaxed">{value}</p>
+    </div>
+  );
+}
+
+function ProspectCard({ prospect: p, expanded, onToggle }: {
+  prospect: Prospect; expanded: boolean; onToggle: () => void;
+}) {
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  const handleSend = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSending(true);
+    await new Promise(r => setTimeout(r, 1500));
+    setSending(false);
+    setSent(true);
+  };
+
+  return (
+    <div className={`card transition-all duration-200 cursor-pointer ${expanded ? "border-indigo-500/20" : "card-hover"}`} onClick={onToggle}>
+      <div className="p-5">
+        <div className="flex items-start justify-between">
+          <div className="flex items-start gap-4">
+            <div className="h-11 w-11 rounded-xl bg-indigo-500/10 flex items-center justify-center text-[15px] font-bold text-indigo-400 shrink-0">
+              {p.company.charAt(0)}
+            </div>
+            <div>
+              <h3 className="text-[15px] font-semibold text-zinc-200">{p.company}</h3>
+              <p className="text-[12px] text-zinc-500 mt-0.5">{p.contactName} &middot; {p.contactTitle}</p>
+              <div className="flex items-center gap-2 mt-1.5">
+                <span className="badge bg-white/[0.06] text-zinc-400 text-[10px]">{p.industry}</span>
+                <span className="badge bg-white/[0.06] text-zinc-400 text-[10px]">{p.size}</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {sent ? (
+              <span className="badge bg-emerald-500/10 text-emerald-400 text-[11px]">Sent</span>
+            ) : (
+              <button onClick={handleSend} disabled={sending}
+                className="rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-[12px] font-medium px-4 py-2 transition-all">
+                {sending ? "Sending..." : "Send"}
+              </button>
+            )}
+            <svg className={`h-4 w-4 text-zinc-600 transition-transform ${expanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
+          </div>
+        </div>
+        <p className="text-[12px] text-zinc-500 mt-3 leading-relaxed">{p.whyGoodFit}</p>
+      </div>
+
+      {expanded && (
+        <div className="px-5 pb-5">
           <div className="divider mb-4" />
-
-          <div className="flex items-center justify-between">
-            <p className="text-[13px] text-zinc-400">
-              Total pipeline value:{" "}
-              <span className="font-semibold text-white tabular-nums">
-                {totalPipelineValue}
-              </span>
-            </p>
-            <Link
-              href="/app/deals"
-              className="text-[13px] font-medium text-indigo-400 hover:text-indigo-300 transition-colors"
-            >
-              View all deals &rarr;
-            </Link>
+          <p className="text-[11px] uppercase tracking-wider text-zinc-500 font-medium mb-2">Draft outreach email</p>
+          <div className="rounded-xl bg-white/[0.02] border border-white/[0.04] p-4">
+            <pre className="text-[13px] text-zinc-300 leading-relaxed whitespace-pre-wrap font-sans">{p.outreachMessage}</pre>
           </div>
+          <p className="text-[11px] text-zinc-600 mt-2">To: {p.contactEmail}</p>
         </div>
-      </section>
-
-      {/* ─── Section 3: Needs Your Input ───────────────── */}
-      <section>
-        <h2 className="text-[22px] font-semibold text-white mb-4">
-          Needs your input
-        </h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {ACTION_ITEMS.map((item, i) => (
-            <div key={i} className={`card-elevated ${item.accent} p-5`}>
-              <h3 className="text-[13px] font-semibold text-white mb-2">
-                {item.title}
-              </h3>
-              <p className="text-[12px] text-zinc-400 leading-relaxed mb-4">
-                {item.description}
-                {item.question && (
-                  <span className="text-zinc-300"> {item.question}</span>
-                )}
-              </p>
-              <div className="flex gap-2">
-                {item.actions.map((action) => (
-                  <button
-                    key={action.label}
-                    className={`rounded-lg px-3.5 py-1.5 text-[12px] font-medium transition-all duration-150 cursor-pointer ${
-                      action.style === "primary"
-                        ? "bg-white/10 text-white hover:bg-white/15"
-                        : "bg-white/[0.04] text-zinc-400 hover:bg-white/[0.08] hover:text-zinc-200"
-                    }`}
-                  >
-                    {action.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ─── Section 4: Monthly Results ────────────────── */}
-      <section>
-        <h2 className="text-[22px] font-semibold text-white mb-4">
-          This month&apos;s results
-        </h2>
-        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-          {MONTHLY_METRICS.map((metric) => (
-            <div key={metric.label} className="card-elevated p-5 text-center">
-              <svg
-                className="mx-auto mb-3 h-6 w-6 text-zinc-500"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.5}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d={metric.icon}
-                />
-              </svg>
-              <p className="text-[22px] font-semibold text-white tabular-nums">
-                {metric.value}
-              </p>
-              <p className="mt-1 text-[12px] text-zinc-500">{metric.label}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      )}
     </div>
   );
 }
