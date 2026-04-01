@@ -114,7 +114,16 @@ Geography: ${icp.icp?.geography || "Global"}`
       prospects = { prospects: [] };
     }
 
-    // Step 3: Save to database
+    // Step 3: Ensure organization exists for this user
+    const orgs = await sql`SELECT id FROM organizations WHERE id = ${user.id}`;
+    if (orgs.length === 0) {
+      await sql`
+        INSERT INTO organizations (id, name, slug)
+        VALUES (${user.id}, ${user.company_name || user.email}, ${user.email.split("@")[0]})
+      `;
+    }
+
+    // Step 4: Save goal to database
     const goalId = crypto.randomUUID();
     await sql`
       INSERT INTO goals (id, org_id, raw_input, interpreted_summary, status, metadata)
